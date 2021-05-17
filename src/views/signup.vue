@@ -23,7 +23,7 @@
           <label for="password">パスワード：</label>
         </div>
         <div class="input-area">
-          <input type="text" id="password" v-model="password">
+          <input type="password" id="password" v-model="password">
         </div>
       </div>
       <div class="input-btn">
