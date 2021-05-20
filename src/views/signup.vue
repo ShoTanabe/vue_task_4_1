@@ -27,7 +27,7 @@
         </div>
       </div>
       <div class="input-btn">
-        <button type="button" @click="register()">新規登録</button>
+        <button class="stretched-link" type="button" @click="register()">新規登録</button>
       </div>
       <router-link to="/"><p class="sf-link">ログインはこちらから</p></router-link>
     </form>
@@ -54,9 +54,7 @@
             password: this.password,
             returnSecureToken: true
           }
-        ).then((response) => {
-          console.log(response);
-        });
+        );
         this.name = '';
         this.email = '';
         this.password = '';

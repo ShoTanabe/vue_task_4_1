@@ -7,19 +7,19 @@
           <label for="email">メールアドレス：</label>
         </div>
         <div class="input-area">
-          <input type="email" id="email">
+          <input type="email" id="email" v-model="email">
         </div>
       </div>
       <div class="input-group">
         <div class="input-title">
-          <label for="email">パスワード：</label>
+          <label for="password">パスワード：</label>
         </div>
         <div class="input-area">
-          <input type="text" id="password">
+          <input type="password" id="password" v-model="password">
         </div>
       </div>
       <div class="input-btn">
-        <button type="button">送信</button>
+        <button class="stretched-link" type="button" @click="login()">送信</button>
       </div>
       <router-link to="/signup"><p class="sf-link">新規登録はこちらから</p></router-link>
     </form>
@@ -27,6 +27,37 @@
 </template>
 
 <script>
+import axios from '../axios-for-auth.js';
+
+export default {
+  data() {
+    return {
+      email: '',
+      password: ''
+    }
+  },
+  methods: {
+    login() {
+      axios.post(
+        '/accounts:signInWithPassword?key=AIzaSyDshjRyPmOuk405B5g_XRfz2ri_QuXsSmQ',
+        {
+          email: this.email,
+          password: this.password,
+          returnSecureToken: true
+        }
+      ).then((response) => {
+        this.$store.commit('updateIdToken', response.data.idToken);
+        this.$router.push('/dashboard');
+        }
+      ).catch(() => {
+        this.$router.push('/dashboard');
+      })
+      this.email = '';
+      this.password = '';
+    }
+  }
+}
+
 
 </script>
 
