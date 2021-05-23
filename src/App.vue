@@ -53,6 +53,8 @@
         border: solid 1px #9c9c9c;
         border-radius: 4px;
         padding: 2px 0;
+        line-height: 24px;
+        font-size: 0.8em;
       }
     }
 
@@ -64,6 +66,21 @@
       color: #3397f5;
       text-align: center;
       padding: 10px;
+      position: relative;
+
+      .stretched-link {
+        &::after{
+          position: absolute;
+          top: 0;
+          right: 0;
+          bottom: 0;
+          left: 0;
+          z-index: 1;
+          pointer-events: auto;
+          content: "";
+          background-color: rgba(0,0,0,0);
+        }
+      }
 
       &:hover {
         background-color: #3397f5;
@@ -82,6 +99,19 @@
       }
     }
 
+  }
+
+  .message {
+    text-align: center;
+    font-size: 1.1em;
+    margin-bottom: 10px;
+  }
+
+  .link {
+    text-align: center;
+    font-size: 0.8em;
+    color: #3397f5;
+    margin-bottom: 30px;
   }
 
 }

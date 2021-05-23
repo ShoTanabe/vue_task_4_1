@@ -1,5 +1,7 @@
 <template>
-  <h1>アプリ画面です</h1>
+  <div class="container">
+    <h2>ダッシュボードです</h2>
+  </div>
 </template>
 
 <script>
