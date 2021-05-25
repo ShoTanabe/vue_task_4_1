@@ -37,7 +37,8 @@
 </template>
 
 <script>
-  import axios from '../axios-for-auth.js';
+  import axios from 'axios'
+
   export default {
     data() {
       return {
@@ -51,7 +52,7 @@
     methods: {
       register() {
         axios.post(
-          '/accounts:signUp?key=AIzaSyDshjRyPmOuk405B5g_XRfz2ri_QuXsSmQ',
+          'https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=AIzaSyDshjRyPmOuk405B5g_XRfz2ri_QuXsSmQ',
           {
             displayName: this.name,
             email: this.email,
@@ -64,7 +65,7 @@
         }).catch(() => {
           this.failed = true;
           this.success = false;
-        })
+        });
         this.name = '';
         this.email = '';
         this.password = '';

@@ -26,7 +26,7 @@ export default new Router({
         if(store.getters.idToken) {
           next();
         } else {
-          next('/error');
+          next('/');
         }
       }
     },
