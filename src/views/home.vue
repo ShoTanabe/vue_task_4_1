@@ -47,6 +47,7 @@ export default {
         }
       ).then((response) => {
         this.$store.commit('updateIdToken', response.data.idToken);
+        this.$store.commit('updateUserName', response.data.displayName);
         this.$router.push('/dashboard');
         }
       ).catch(() => {
