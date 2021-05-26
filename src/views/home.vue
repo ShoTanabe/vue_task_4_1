@@ -27,7 +27,7 @@
 </template>
 
 <script>
-import axios from '../axios-for-auth.js';
+import axios from 'axios'
 
 export default {
   data() {
@@ -39,7 +39,7 @@ export default {
   methods: {
     login() {
       axios.post(
-        '/accounts:signInWithPassword?key=AIzaSyDshjRyPmOuk405B5g_XRfz2ri_QuXsSmQ',
+        'https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=AIzaSyDshjRyPmOuk405B5g_XRfz2ri_QuXsSmQ',
         {
           email: this.email,
           password: this.password,
@@ -51,7 +51,7 @@ export default {
         this.$router.push('/dashboard');
         }
       ).catch(() => {
-        this.$router.push('/dashboard');
+        this.$router.push('/error');
       })
       this.email = '';
       this.password = '';

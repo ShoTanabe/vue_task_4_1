@@ -2,6 +2,11 @@
   <div class="container">
     <div class="user-info clear-fix">
       <p class="user-name">{{ userName }} さんようこそ！！</p>
+      <div class="logout-area">
+        <div class="logout-btn">
+          <button class="stretched-link" type="button" name="logout" @click="logout()">ログアウト</button>
+        </div>
+      </div>
       <p class="user-money">残高 ： {{ moneyPossession }}</p>
     </div>
     <h2>一覧</h2>
@@ -48,6 +53,13 @@ export default {
     moneyPossession() {
       return this.startMoney - this.paidMoney;
     }
+  },
+  methods: {
+    logout() {
+      this.$store.commit('updateIdToken', null);
+      this.$store.commit('updateUserName', null);
+      this.$router.push('/');
+    }
   }
 }
 
@@ -65,10 +77,35 @@ export default {
   }
 
   .user-money {
-    width: 50%;
+    width: 30%;
     float: right;
     text-align: center;
   }
+
+  .logout-area {
+    width: 20%;
+    float: right;
+  }
+
+  .logout-btn {
+    width: 60%;
+    font-size: 0.7em;
+    text-align: center;
+    padding: 5px;
+    border-radius: 4px;
+    line-height: 1em;
+    position: relative;
+    background-color: #777777;
+    color: #fff;
+
+    &:hover {
+      opacity: 0.7;
+    }
+  }
+
+  .logout-btn {
+  }
+
 }
 
 table.user-list {
