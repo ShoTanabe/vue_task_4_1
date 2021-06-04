@@ -62,13 +62,27 @@
         ).then(() => {
           this.success = true;
           this.failed = false;
+          axios.post(
+            'https://firestore.googleapis.com/v1/projects/vue-task-4/databases/(default)/documents/lists/',
+            {
+              fields: {
+                name: { stringValue: this.name },
+                money: { integerValue: 500 },
+              }
+            }
+          ).catch(() => {
+            console.log('エラー発生');
+          });
+          this.name = '';
+          this.email = '';
+          this.password = '';
         }).catch(() => {
           this.failed = true;
           this.success = false;
+          this.name = '';
+          this.email = '';
+          this.password = '';
         });
-        this.name = '';
-        this.email = '';
-        this.password = '';
       }
     }
   }
