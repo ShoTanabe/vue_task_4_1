@@ -12,7 +12,6 @@
 
 <script>
 export default {
-  props: ['val'],
   methods: {
     closeModal() {
       this.$emit('from-child');
