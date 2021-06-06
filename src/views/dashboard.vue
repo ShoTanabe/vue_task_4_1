@@ -4,7 +4,13 @@
       <p class="user-name">{{ userName }} さんようこそ！！</p>
       <div class="logout-area">
         <div class="logout-btn">
-          <button class="stretched-link" type="button" name="logout" @click="logout()">ログアウト</button>
+          <button
+            class="stretched-link"
+            type="button"
+            name="logout"
+            @click="logout()">
+            ログアウト
+          </button>
         </div>
       </div>
       <p class="user-money">残高 ： {{ moneyPossession }}</p>
@@ -19,31 +25,53 @@
         </tr>
       </thead>
       <tbody>
-        <tr>
-          <th>test2</th>
+        <tr v-for="user in userList" :key="user.name">
+          <th>{{ user.fields.name.stringValue }}</th>
           <td>
             <div class="btn">
-              <button class="stretched-link" type="button" name="button">walletを見る</button>
+              <button
+                class="stretched-link"
+                type="button" name="button"
+                @click="openModal(user)">
+                walletを見る
+              </button>
             </div>
           </td>
           <td>
             <div class="btn">
-              <button class="stretched-link" type="button" name="button">送る</button>
+              <button
+                class="stretched-link"
+                type="button"
+                name="button">
+                送る
+              </button>
             </div>
           </td>
         </tr>
       </tbody>
     </table>
+    <div v-if="showModal" class="modal">
+      <modal
+        @from-child="closeModal()">
+      </modal>
+    </div>
   </div>
 </template>
 
 <script>
+import axios from 'axios';
+import modal from '@/components/modal';
 
 export default {
+  components: {
+    modal,
+  },
   data() {
     return {
       startMoney: 500,
-      paidMoney: 0
+      paidMoney: 0,
+      userList: [],
+      showModal: false
     }
   },
   computed: {
@@ -59,7 +87,24 @@ export default {
       this.$store.commit('updateIdToken', null);
       this.$store.commit('updateUserName', null);
       this.$router.push('/');
+    },
+    openModal(user) {
+      this.$store.commit('updateModalName', user.fields.name.stringValue);
+      this.$store.commit('updateModalMoney', user.fields.money.integerValue);
+      this.showModal = true;
+    },
+    closeModal() {
+      this.showModal = false;
     }
+  },
+  created() {
+    axios.get(
+      'https://firestore.googleapis.com/v1/projects/vue-task-4/databases/(default)/documents/lists/'
+    ).then((response) => {
+      this.userList = response.data.documents;
+    }).catch(() => {
+      console.log('取得エラー');
+    })
   }
 }
 
@@ -103,9 +148,6 @@ export default {
     }
   }
 
-  .logout-btn {
-  }
-
 }
 
 table.user-list {
@@ -133,9 +175,42 @@ table.user-list {
         font-size: 1.2em;
         padding: 5px;
       }
-
     }
+  }
+}
 
+.modal {
+  position: fixed;
+  z-index: 1;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 100%;
+  overflow: auto;
+  background-color: rgba(0,0,0,0.5);
+
+  .modal-content {
+    background-color: #fff;
+    width: 240px;
+    margin: 200px auto;
+    border-radius: 10px;
+    padding-bottom: 5px;
+
+    p.modal-text {
+      text-align: center;
+      padding-top: 15px;
+    }
+  }
+
+  .red-btn {
+    display: block;
+    width: 80px;
+    margin: 10px auto;
+    background-color: #c74e6a;
+    padding: 8px;
+    border-radius: 3px;
+    color: #fff;
+    text-align: center;
   }
 }
 
