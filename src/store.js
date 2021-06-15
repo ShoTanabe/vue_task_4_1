@@ -8,13 +8,17 @@ export default new Vuex.Store({
     idToken: null,
     userName: null,
     modalName: null,
-    modalMoney: null
+    modalMoney: null,
+    remittanceName: null,
+    totalFee: null
   },
   getters: {
     idToken: state => state.idToken,
     userName: state => state.userName,
     modalName: state => state.modalName,
-    modalMoney: state => state.modalMoney
+    modalMoney: state => state.modalMoney,
+    remittanceName: state => state.remittanceName,
+    totalFee: state => state.totalFee
   },
   mutations: {
     updateIdToken(state, idToken) {
@@ -28,6 +32,12 @@ export default new Vuex.Store({
     },
     updateModalMoney(state, modalMoney) {
       state.modalMoney = modalMoney;
+    },
+    updateRemittanceName(state, remittanceName) {
+      state.remittanceName = remittanceName;
+    },
+    updateTotalFee(state, totalFee) {
+      state.totalFee = totalFee;
     }
   }
 });

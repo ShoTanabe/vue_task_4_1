@@ -13,7 +13,7 @@
           </button>
         </div>
       </div>
-      <p class="user-money">残高 ： {{ moneyPossession }}</p>
+      <p class="user-money">残高 ： {{ this.userMoney }}</p>
     </div>
     <h2>一覧</h2>
     <table class="user-list">
@@ -32,7 +32,7 @@
               <button
                 class="stretched-link"
                 type="button" name="button"
-                @click="openModal(user)">
+                @click="openWalletModal(user)">
                 walletを見る
               </button>
             </div>
@@ -42,7 +42,8 @@
               <button
                 class="stretched-link"
                 type="button"
-                name="button">
+                name="button"
+                @click="openRemittanceModal(user)">
                 送る
               </button>
             </div>
@@ -50,36 +51,45 @@
         </tr>
       </tbody>
     </table>
-    <div v-if="showModal" class="modal">
-      <modal
-        @from-child="closeModal()">
-      </modal>
+    <div v-if="showWalletModal" class="modal">
+      <walletModal
+        @from-child="closeWalletModal()">
+      </walletModal>
+    </div>
+    <div v-if="showRemittanceModal" class="modal">
+      <remittanceModal
+        :possession="userMoney"
+        @from-child="closeRemittanceModal">
+      </remittanceModal>
     </div>
   </div>
 </template>
 
 <script>
 import axios from 'axios';
-import modal from '@/components/modal';
+import walletModal from '@/components/walletModal';
+import remittanceModal from '@/components/remittanceModal';
 
 export default {
   components: {
-    modal,
+    walletModal,
+    remittanceModal,
   },
   data() {
     return {
-      startMoney: 500,
-      paidMoney: 0,
+      userIndex: null,
+      userMoney: null,
       userList: [],
-      showModal: false
+      showWalletModal: false,
+      showRemittanceModal: false
     }
   },
   computed: {
     userName() {
       return this.$store.getters.userName;
     },
-    moneyPossession() {
-      return this.startMoney - this.paidMoney;
+    totalFee() {
+      return this.$store.getters.totalFee;
     }
   },
   methods: {
@@ -88,13 +98,33 @@ export default {
       this.$store.commit('updateUserName', null);
       this.$router.push('/');
     },
-    openModal(user) {
+    openWalletModal(user) {
       this.$store.commit('updateModalName', user.fields.name.stringValue);
       this.$store.commit('updateModalMoney', user.fields.money.integerValue);
-      this.showModal = true;
+      this.showWalletModal = true;
     },
-    closeModal() {
-      this.showModal = false;
+    openRemittanceModal(user) {
+      this.$store.commit('updateTotalFee', user.fields.money.integerValue);
+      this.showRemittanceModal = true;
+    },
+    closeWalletModal() {
+      this.showWalletModal = false;
+    },
+    closeRemittanceModal(val) {
+      this.userMoney -= val;
+      this.$store.commit('updateTotalFee', Number(this.totalFee) + Number(val));
+      console.log(this.totalFee);
+      this.showRemittanceModal = false;
+      axios.put(
+        'https://firestore.googleapis.com/v1/projects/vue-task-4/databases/(default)/documents/lists/',
+        {
+          fields: {
+            money: { integerValue: this.totalFee },
+          }
+        }
+      ).catch(() => {
+        console.log('エラー発生');
+      });
     }
   },
   created() {
@@ -102,9 +132,17 @@ export default {
       'https://firestore.googleapis.com/v1/projects/vue-task-4/databases/(default)/documents/lists/'
     ).then((response) => {
       this.userList = response.data.documents;
+      for(let i = 0; i < this.userList.length; i++) {
+        if(this.userList[i].fields.name.stringValue === this.userName) {
+          this.userIndex = i;
+        } else {
+          continue;
+        }
+      }
+      this.userMoney = this.userList[this.userIndex].fields.money.integerValue;
     }).catch(() => {
       console.log('取得エラー');
-    })
+    });
   }
 }
 
@@ -134,6 +172,7 @@ export default {
 
   .logout-btn {
     width: 60%;
+    min-width: 70px;
     font-size: 0.7em;
     text-align: center;
     padding: 5px;

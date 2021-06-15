@@ -4,7 +4,7 @@
       <div class="modal-body">
         <p class="modal-text">{{ modalName }} さんの残高</p>
         <p class="modal-text">{{ modalMoney }}</p>
-        <button class="red-btn" @click="closeModal()">閉じる</button>
+        <button class="red-btn" @click="closeWalletModal()">閉じる</button>
       </div>
     </div>
   </div>
@@ -13,7 +13,7 @@
 <script>
 export default {
   methods: {
-    closeModal() {
+    closeWalletModal() {
       this.$emit('from-child');
     }
   },
