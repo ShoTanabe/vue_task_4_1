@@ -13,7 +13,7 @@
           </button>
         </div>
       </div>
-      <p class="user-money">残高 ： {{ this.userMoney }}</p>
+      <p class="user-money">残高 ： {{ userMoney }}</p>
     </div>
     <h2>一覧</h2>
     <table class="user-list">
@@ -26,7 +26,7 @@
       </thead>
       <tbody>
         <tr v-for="user in userList" :key="user.name">
-          <th>{{ user.fields.name.stringValue }}</th>
+          <th>{{ user.name }}</th>
           <td>
             <div class="btn">
               <button
@@ -66,7 +66,10 @@
 </template>
 
 <script>
-import axios from 'axios';
+import firebase from 'firebase/app'
+import "firebase/auth";
+import 'firebase/firestore';
+
 import walletModal from '@/components/walletModal';
 import remittanceModal from '@/components/remittanceModal';
 
@@ -77,72 +80,110 @@ export default {
   },
   data() {
     return {
+      userName: firebase.auth().currentUser.displayName,
       userIndex: null,
+      remittanceIndex: null,
       userMoney: null,
       userList: [],
+      userIdList: [],
       showWalletModal: false,
       showRemittanceModal: false
     }
   },
   computed: {
-    userName() {
-      return this.$store.getters.userName;
-    },
     totalFee() {
       return this.$store.getters.totalFee;
+    },
+    remittanceName() {
+      return this.$store.getters.remittanceName;
+    },
+    remittanceId() {
+      return this.$store.getters.remittanceId;
+    },
+    userId() {
+      return this.$store.getters.userId;
     }
   },
   methods: {
     logout() {
-      this.$store.commit('updateIdToken', null);
-      this.$store.commit('updateUserName', null);
-      this.$router.push('/');
+      firebase.auth().signOut();
     },
     openWalletModal(user) {
-      this.$store.commit('updateModalName', user.fields.name.stringValue);
-      this.$store.commit('updateModalMoney', user.fields.money.integerValue);
+      this.userList = [];
+      firebase.firestore().collection('lists').get()
+        .then(snapshot => {
+          snapshot.forEach(doc => {
+            this.userList.push(doc.data())
+          });
+        this.userMoney = this.userList[this.userIndex].money;
+        });
+      this.$store.commit('updateModalName', user.name);
+      this.$store.commit('updateModalMoney', user.money);
       this.showWalletModal = true;
     },
     openRemittanceModal(user) {
-      this.$store.commit('updateTotalFee', user.fields.money.integerValue);
+      this.$store.commit('updateTotalFee', user.money);
+      this.$store.commit('updateRemittanceName', user.name);
+      for(let l = 0; l < this.userList.length; l++) {
+        if(this.userList[l].name === user.name) {
+          this.remittanceIndex = l;
+        } else {
+          continue;
+        }
+      }
+      this.$store.commit('updateRemittanceId', this.userIdList[this.remittanceIndex]);
       this.showRemittanceModal = true;
     },
     closeWalletModal() {
       this.showWalletModal = false;
     },
     closeRemittanceModal(val) {
-      this.userMoney -= val;
-      this.$store.commit('updateTotalFee', Number(this.totalFee) + Number(val));
-      console.log(this.totalFee);
+      let remittanceUpdate = {
+        name: this.remittanceName,
+        money: Number(this.totalFee) + Number(val)
+      };
+      let myUpdate = {
+        name: this.userName,
+        money: Number(this.userMoney) - Number(val)
+      };
+      if(this.remittanceName !== this.userName && this.userMoney >= val){
+        firebase.firestore().collection('lists').doc(this.remittanceId).set(remittanceUpdate);
+        firebase.firestore().collection('lists').doc(this.userId).set(myUpdate);
+        this.userList = [];
+        firebase.firestore().collection('lists').get()
+          .then(snapshot => {
+            snapshot.forEach(doc => {
+              this.userList.push(doc.data());
+            });
+          this.userMoney = this.userList[this.userIndex].money;
+          });
+      }
       this.showRemittanceModal = false;
-      axios.put(
-        'https://firestore.googleapis.com/v1/projects/vue-task-4/databases/(default)/documents/lists/',
-        {
-          fields: {
-            money: { integerValue: this.totalFee },
-          }
-        }
-      ).catch(() => {
-        console.log('エラー発生');
-      });
+      if(this.userMoney < val){
+        alert('所持金以上の送金はできません');
+      }
+      if(this.remittanceName === this.userName){
+        alert('自分自身への送金はできません');
+      }
     }
   },
   created() {
-    axios.get(
-      'https://firestore.googleapis.com/v1/projects/vue-task-4/databases/(default)/documents/lists/'
-    ).then((response) => {
-      this.userList = response.data.documents;
+    firebase.firestore().collection('lists').get()
+      .then(snapshot => {
+        snapshot.forEach(doc => {
+          this.userList.push(doc.data());
+          this.userIdList.push(doc.id);
+        });
       for(let i = 0; i < this.userList.length; i++) {
-        if(this.userList[i].fields.name.stringValue === this.userName) {
+        if(this.userList[i].name === this.userName) {
           this.userIndex = i;
         } else {
           continue;
         }
       }
-      this.userMoney = this.userList[this.userIndex].fields.money.integerValue;
-    }).catch(() => {
-      console.log('取得エラー');
-    });
+      this.userMoney = this.userList[this.userIndex].money;
+      this.$store.commit('updateUserId', this.userIdList[this.userIndex]);
+      });
   }
 }
 

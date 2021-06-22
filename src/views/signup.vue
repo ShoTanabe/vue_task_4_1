@@ -9,7 +9,7 @@
           <label for="name">ユーザー名：</label>
         </div>
         <div class="input-area">
-          <input type="text" id="name" v-model="name">
+          <input type="text" id="name" v-model="name" @focus="deleteJudge">
         </div>
       </div>
       <div class="input-group">
@@ -17,7 +17,7 @@
           <label for="email">メールアドレス：</label>
         </div>
         <div class="input-area">
-          <input type="email" id="email" v-model="email">
+          <input type="email" id="email" v-model="email" @focus="deleteJudge">
         </div>
       </div>
       <div class="input-group">
@@ -25,7 +25,7 @@
           <label for="password">パスワード：</label>
         </div>
         <div class="input-area">
-          <input type="password" id="password" v-model="password">
+          <input type="password" id="password" v-model="password" @focus="deleteJudge">
         </div>
       </div>
       <div class="input-btn">
@@ -37,54 +37,51 @@
 </template>
 
 <script>
-  import axios from 'axios'
+  import firebase from 'firebase/app'
+  import 'firebase/auth';
+  import 'firebase/firestore';
 
   export default {
+
     data() {
       return {
         name: '',
         email: '',
         password: '',
         success: false,
-        failed: false
+        failed: false,
+        db: null
       }
     },
     methods: {
       register() {
-        axios.post(
-          'https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=AIzaSyDshjRyPmOuk405B5g_XRfz2ri_QuXsSmQ',
-          {
-            displayName: this.name,
-            email: this.email,
-            password: this.password,
-            returnSecureToken: true
-          }
-        ).then(() => {
-          this.success = true;
-          this.failed = false;
-          axios.post(
-            'https://firestore.googleapis.com/v1/projects/vue-task-4/databases/(default)/documents/lists/',
-            {
-              fields: {
-                name: { stringValue: this.name },
-                money: { integerValue: 500 },
-              }
-            }
-          ).catch(() => {
-            console.log('エラー発生');
-          });
-          this.name = '';
-          this.email = '';
-          this.password = '';
-        }).catch(() => {
-          this.failed = true;
-          this.success = false;
-          this.name = '';
-          this.email = '';
-          this.password = '';
-        });
+          firebase.auth().createUserWithEmailAndPassword(this.email, this.password)
+            .then((result) => {
+              result.user.updateProfile({
+                displayName: this.name
+              });
+              const list = {
+                  name: this.name,
+                  money: 500
+              };
+              firebase.firestore().collection('lists').add(list);
+              this.success = true;
+              this.name = '';
+              this.email = '';
+              this.password = '';
+            })
+            .catch(() => {
+              this.failed = true;
+              this.name = '';
+              this.email = '';
+              this.password = '';
+            })
+      },
+      deleteJudge() {
+        this.success = false;
+        this.failed = false;
       }
-    }
+    },
   }
 
 </script>
