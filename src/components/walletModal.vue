@@ -19,10 +19,10 @@ export default {
   },
   computed: {
     modalName() {
-      return this.$store.getters.modalName;
+      return this.$store.getters.walletModalData.modalName;
     },
     modalMoney() {
-      return this.$store.getters.modalMoney;
+      return this.$store.getters.walletModalData.modalMoney;
     }
   },
 }

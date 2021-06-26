@@ -25,7 +25,7 @@
         </tr>
       </thead>
       <tbody>
-        <tr v-for="user in userList" :key="user.name">
+        <tr v-for="user in displayUserList" :key="user.name">
           <th>{{ user.name }}</th>
           <td>
             <div class="btn">
@@ -59,7 +59,8 @@
     <div v-if="showRemittanceModal" class="modal">
       <remittanceModal
         :possession="userMoney"
-        @from-child="closeRemittanceModal">
+        @from-remittance-btn="closeRemittanceModal"
+        @from-close-btn="onlyCloseRemittanceModal">
       </remittanceModal>
     </div>
   </div>
@@ -92,16 +93,21 @@ export default {
   },
   computed: {
     totalFee() {
-      return this.$store.getters.totalFee;
+      return this.$store.getters.remittanceModalData.totalFee;
     },
     remittanceName() {
-      return this.$store.getters.remittanceName;
+      return this.$store.getters.remittanceModalData.remittanceName;
     },
     remittanceId() {
       return this.$store.getters.remittanceId;
     },
     userId() {
       return this.$store.getters.userId;
+    },
+    displayUserList() {
+      const displayUserList = this.userList;
+      displayUserList.splice(this.userIndex, 1);
+      return displayUserList;
     }
   },
   methods: {
@@ -116,14 +122,21 @@ export default {
             this.userList.push(doc.data())
           });
         this.userMoney = this.userList[this.userIndex].money;
-        });
-      this.$store.commit('updateModalName', user.name);
-      this.$store.commit('updateModalMoney', user.money);
-      this.showWalletModal = true;
+        this.showWalletModal = true;
+        })
+        .catch(() => {
+          console.log('読み込みエラーが発生しました。')
+        })
+      this.$store.commit('updateWalletModalData', {
+        modalName: user.name,
+        modalMoney: user.money
+      });
     },
     openRemittanceModal(user) {
-      this.$store.commit('updateTotalFee', user.money);
-      this.$store.commit('updateRemittanceName', user.name);
+      this.$store.commit('updateRemittanceModalData', {
+        totalFee: user.money,
+        remittanceName: user.name
+      });
       for(let l = 0; l < this.userList.length; l++) {
         if(this.userList[l].name === user.name) {
           this.remittanceIndex = l;
@@ -138,33 +151,44 @@ export default {
       this.showWalletModal = false;
     },
     closeRemittanceModal(val) {
-      let remittanceUpdate = {
+      const remittanceUpdate = {
         name: this.remittanceName,
         money: Number(this.totalFee) + Number(val)
       };
-      let myUpdate = {
+      const myUpdate = {
         name: this.userName,
         money: Number(this.userMoney) - Number(val)
       };
-      if(this.remittanceName !== this.userName && this.userMoney >= val){
-        firebase.firestore().collection('lists').doc(this.remittanceId).set(remittanceUpdate);
-        firebase.firestore().collection('lists').doc(this.userId).set(myUpdate);
-        this.userList = [];
-        firebase.firestore().collection('lists').get()
-          .then(snapshot => {
-            snapshot.forEach(doc => {
-              this.userList.push(doc.data());
+
+      const batch = firebase.firestore().batch();
+
+      const remittanceRef = firebase.firestore().collection('lists').doc(this.remittanceId);
+      batch.set(remittanceRef, remittanceUpdate);
+
+      const mydataRef = firebase.firestore().collection('lists').doc(this.userId);
+      batch.set(mydataRef, myUpdate);
+
+      batch.commit()
+        .then(() => {
+          firebase.firestore().collection('lists').get()
+            .then(snapshot => {
+              this.userList = [];
+              snapshot.forEach(doc => {
+                this.userList.push(doc.data());
+              });
+            this.userMoney = this.userList[this.userIndex].money;
+            })
+            .catch(() => {
+              console.log('読み込みエラーが発生しました。');
             });
-          this.userMoney = this.userList[this.userIndex].money;
-          });
-      }
+        })
+        .catch(() => {
+          console.log("更新エラーが発生しました。");
+        });
       this.showRemittanceModal = false;
-      if(this.userMoney < val){
-        alert('所持金以上の送金はできません');
-      }
-      if(this.remittanceName === this.userName){
-        alert('自分自身への送金はできません');
-      }
+    },
+    onlyCloseRemittanceModal() {
+      this.showRemittanceModal = false;
     }
   },
   created() {
@@ -183,7 +207,10 @@ export default {
       }
       this.userMoney = this.userList[this.userIndex].money;
       this.$store.commit('updateUserId', this.userIdList[this.userIndex]);
-      });
+      })
+      .catch(() => {
+        console.log('読み込みエラーが発生しました。')
+      })
   }
 }
 
@@ -284,9 +311,20 @@ table.user-list {
 
   .red-btn {
     display: block;
-    width: 80px;
+    width: 120px;
     margin: 10px auto;
     background-color: #c74e6a;
+    padding: 8px;
+    border-radius: 3px;
+    color: #fff;
+    text-align: center;
+  }
+
+  .gray-btn {
+    display: block;
+    width: 120px;
+    margin: 10px auto;
+    background-color: #8d8d8d;
     padding: 8px;
     border-radius: 3px;
     color: #fff;
