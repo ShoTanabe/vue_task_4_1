@@ -5,29 +5,29 @@ Vue.use(Vuex);
 
 export default new Vuex.Store({
   state: {
-    idToken: null,
-    userName: null,
-    modalName: null,
-    modalMoney: null
+    walletModalData: { modalName: null, modalMoney: null },
+    remittanceModalData: { remittanceName: null, totalFee: null },
+    remittanceId: null,
+    userId: null
   },
   getters: {
-    idToken: state => state.idToken,
-    userName: state => state.userName,
-    modalName: state => state.modalName,
-    modalMoney: state => state.modalMoney
+    walletModalData: state => state.walletModalData,
+    remittanceModalData: state => state.remittanceModalData,
+    remittanceId: state => state.remittanceId,
+    userId: state => state.userId
   },
   mutations: {
-    updateIdToken(state, idToken) {
-      state.idToken = idToken;
+    updateWalletModalData(state, walletModalData) {
+      state.walletModalData = walletModalData;
     },
-    updateUserName(state, userName) {
-      state.userName = userName;
+    updateRemittanceModalData(state, remittanceModalData) {
+      state.remittanceModalData = remittanceModalData;
     },
-    updateModalName(state, modalName) {
-      state.modalName = modalName;
+    updateRemittanceId(state, remittanceId) {
+      state.remittanceId = remittanceId;
     },
-    updateModalMoney(state, modalMoney) {
-      state.modalMoney = modalMoney;
+    updateUserId(state, userId) {
+      state.userId = userId;
     }
   }
 });

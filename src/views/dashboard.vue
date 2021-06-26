@@ -13,7 +13,7 @@
           </button>
         </div>
       </div>
-      <p class="user-money">残高 ： {{ moneyPossession }}</p>
+      <p class="user-money">残高 ： {{ userMoney }}</p>
     </div>
     <h2>一覧</h2>
     <table class="user-list">
@@ -25,14 +25,14 @@
         </tr>
       </thead>
       <tbody>
-        <tr v-for="user in userList" :key="user.name">
-          <th>{{ user.fields.name.stringValue }}</th>
+        <tr v-for="user in displayUserList" :key="user.name">
+          <th>{{ user.name }}</th>
           <td>
             <div class="btn">
               <button
                 class="stretched-link"
                 type="button" name="button"
-                @click="openModal(user)">
+                @click="openWalletModal(user)">
                 walletを見る
               </button>
             </div>
@@ -42,7 +42,8 @@
               <button
                 class="stretched-link"
                 type="button"
-                name="button">
+                name="button"
+                @click="openRemittanceModal(user)">
                 送る
               </button>
             </div>
@@ -50,61 +51,166 @@
         </tr>
       </tbody>
     </table>
-    <div v-if="showModal" class="modal">
-      <modal
-        @from-child="closeModal()">
-      </modal>
+    <div v-if="showWalletModal" class="modal">
+      <walletModal
+        @from-child="closeWalletModal()">
+      </walletModal>
+    </div>
+    <div v-if="showRemittanceModal" class="modal">
+      <remittanceModal
+        :possession="userMoney"
+        @from-remittance-btn="closeRemittanceModal"
+        @from-close-btn="onlyCloseRemittanceModal">
+      </remittanceModal>
     </div>
   </div>
 </template>
 
 <script>
-import axios from 'axios';
-import modal from '@/components/modal';
+import firebase from 'firebase/app'
+import "firebase/auth";
+import 'firebase/firestore';
+
+import walletModal from '@/components/walletModal';
+import remittanceModal from '@/components/remittanceModal';
 
 export default {
   components: {
-    modal,
+    walletModal,
+    remittanceModal,
   },
   data() {
     return {
-      startMoney: 500,
-      paidMoney: 0,
+      userName: firebase.auth().currentUser.displayName,
+      userIndex: null,
+      remittanceIndex: null,
+      userMoney: null,
       userList: [],
-      showModal: false
+      userIdList: [],
+      showWalletModal: false,
+      showRemittanceModal: false
     }
   },
   computed: {
-    userName() {
-      return this.$store.getters.userName;
+    totalFee() {
+      return this.$store.getters.remittanceModalData.totalFee;
     },
-    moneyPossession() {
-      return this.startMoney - this.paidMoney;
+    remittanceName() {
+      return this.$store.getters.remittanceModalData.remittanceName;
+    },
+    remittanceId() {
+      return this.$store.getters.remittanceId;
+    },
+    userId() {
+      return this.$store.getters.userId;
+    },
+    displayUserList() {
+      const displayUserList = this.userList;
+      displayUserList.splice(this.userIndex, 1);
+      return displayUserList;
     }
   },
   methods: {
     logout() {
-      this.$store.commit('updateIdToken', null);
-      this.$store.commit('updateUserName', null);
-      this.$router.push('/');
+      firebase.auth().signOut();
     },
-    openModal(user) {
-      this.$store.commit('updateModalName', user.fields.name.stringValue);
-      this.$store.commit('updateModalMoney', user.fields.money.integerValue);
-      this.showModal = true;
+    openWalletModal(user) {
+      this.userList = [];
+      firebase.firestore().collection('lists').get()
+        .then(snapshot => {
+          snapshot.forEach(doc => {
+            this.userList.push(doc.data())
+          });
+        this.userMoney = this.userList[this.userIndex].money;
+        this.showWalletModal = true;
+        })
+        .catch(() => {
+          console.log('読み込みエラーが発生しました。')
+        })
+      this.$store.commit('updateWalletModalData', {
+        modalName: user.name,
+        modalMoney: user.money
+      });
     },
-    closeModal() {
-      this.showModal = false;
+    openRemittanceModal(user) {
+      this.$store.commit('updateRemittanceModalData', {
+        totalFee: user.money,
+        remittanceName: user.name
+      });
+      for(let l = 0; l < this.userList.length; l++) {
+        if(this.userList[l].name === user.name) {
+          this.remittanceIndex = l;
+        } else {
+          continue;
+        }
+      }
+      this.$store.commit('updateRemittanceId', this.userIdList[this.remittanceIndex]);
+      this.showRemittanceModal = true;
+    },
+    closeWalletModal() {
+      this.showWalletModal = false;
+    },
+    closeRemittanceModal(val) {
+      const remittanceUpdate = {
+        name: this.remittanceName,
+        money: Number(this.totalFee) + Number(val)
+      };
+      const myUpdate = {
+        name: this.userName,
+        money: Number(this.userMoney) - Number(val)
+      };
+
+      const batch = firebase.firestore().batch();
+
+      const remittanceRef = firebase.firestore().collection('lists').doc(this.remittanceId);
+      batch.set(remittanceRef, remittanceUpdate);
+
+      const mydataRef = firebase.firestore().collection('lists').doc(this.userId);
+      batch.set(mydataRef, myUpdate);
+
+      batch.commit()
+        .then(() => {
+          firebase.firestore().collection('lists').get()
+            .then(snapshot => {
+              this.userList = [];
+              snapshot.forEach(doc => {
+                this.userList.push(doc.data());
+              });
+            this.userMoney = this.userList[this.userIndex].money;
+            })
+            .catch(() => {
+              console.log('読み込みエラーが発生しました。');
+            });
+        })
+        .catch(() => {
+          console.log("更新エラーが発生しました。");
+        });
+      this.showRemittanceModal = false;
+    },
+    onlyCloseRemittanceModal() {
+      this.showRemittanceModal = false;
     }
   },
   created() {
-    axios.get(
-      'https://firestore.googleapis.com/v1/projects/vue-task-4/databases/(default)/documents/lists/'
-    ).then((response) => {
-      this.userList = response.data.documents;
-    }).catch(() => {
-      console.log('取得エラー');
-    })
+    firebase.firestore().collection('lists').get()
+      .then(snapshot => {
+        snapshot.forEach(doc => {
+          this.userList.push(doc.data());
+          this.userIdList.push(doc.id);
+        });
+      for(let i = 0; i < this.userList.length; i++) {
+        if(this.userList[i].name === this.userName) {
+          this.userIndex = i;
+        } else {
+          continue;
+        }
+      }
+      this.userMoney = this.userList[this.userIndex].money;
+      this.$store.commit('updateUserId', this.userIdList[this.userIndex]);
+      })
+      .catch(() => {
+        console.log('読み込みエラーが発生しました。')
+      })
   }
 }
 
@@ -134,6 +240,7 @@ export default {
 
   .logout-btn {
     width: 60%;
+    min-width: 70px;
     font-size: 0.7em;
     text-align: center;
     padding: 5px;
@@ -204,9 +311,20 @@ table.user-list {
 
   .red-btn {
     display: block;
-    width: 80px;
+    width: 120px;
     margin: 10px auto;
     background-color: #c74e6a;
+    padding: 8px;
+    border-radius: 3px;
+    color: #fff;
+    text-align: center;
+  }
+
+  .gray-btn {
+    display: block;
+    width: 120px;
+    margin: 10px auto;
+    background-color: #8d8d8d;
     padding: 8px;
     border-radius: 3px;
     color: #fff;

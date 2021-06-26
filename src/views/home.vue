@@ -27,7 +27,8 @@
 </template>
 
 <script>
-import axios from 'axios'
+import firebase from 'firebase/app'
+import "firebase/auth";
 
 export default {
   data() {
@@ -38,21 +39,13 @@ export default {
   },
   methods: {
     login() {
-      axios.post(
-        'https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=AIzaSyDshjRyPmOuk405B5g_XRfz2ri_QuXsSmQ',
-        {
-          email: this.email,
-          password: this.password,
-          returnSecureToken: true
-        }
-      ).then((response) => {
-        this.$store.commit('updateIdToken', response.data.idToken);
-        this.$store.commit('updateUserName', response.data.displayName);
-        this.$router.push('/dashboard');
-        }
-      ).catch(() => {
-        this.$router.push('/error');
-      })
+      firebase.auth().signInWithEmailAndPassword(this.email, this.password)
+        .then(() => {
+          this.$router.push('/dashboard')
+        })
+        .catch(() => {
+          this.$router.push('/error')
+        })
       this.email = '';
       this.password = '';
     }
